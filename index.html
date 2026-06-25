@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpendX™ – Understand Your Spending. Predict Your Financial Habits.</title>
+  <meta name="description" content="SpendX analyzes your OPay bank statements offline and provides spending insights, financial health scores, habit detection, and future spending predictions." />
+  <meta name="author" content="Victor Omiyale – ThePrompt" />
+  <meta name="keywords" content="SpendX, OPay, bank statement analyzer, offline finance app, spending insights, financial health, Android app, Nigeria fintech" />
+  <meta name="robots" content="index, follow" />
+  <!-- Open Graph -->
+  <meta property="og:title" content="SpendX™ – Understand Your Spending" />
+  <meta property="og:description" content="Analyze your OPay bank statements offline. Get spending insights, health scores, habit detection, and predictions – all on your device." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://theprompt.org.ng" />
+  <meta property="og:image" content="logo.png" />
+  <meta property="og:site_name" content="SpendX by ThePrompt" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SpendX™ – Understand Your Spending" />
+  <meta name="twitter:description" content="Analyze your OPay bank statements offline. Privacy-first Android app." />
+  <meta name="twitter:image" content="logo.png" />
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="apple-touch-icon" href="logo.png" />
+
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:   #25D366;
+      --dark:    #128C7E;
+      --bg:      #F7F9FA;
+      --text:    #1F2937;
+      --accent:  #DCF8C6;
+      --muted:   #6B7280;
+      --white:   #FFFFFF;
+      --radius:  16px;
+      --shadow:  0 4px 24px rgba(18,140,126,.12);
+      --shadow-lg: 0 12px 48px rgba(18,140,126,.18);
+      --transition: .3s cubic-bezier(.4,0,.2,1);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button, .btn { cursor: pointer; font-family: inherit; border: none; outline: none; }
+
+    /* ─── TYPOGRAPHY ──────────────────────────────────── */
+    h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; letter-spacing: -.02em; }
+    h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); font-weight: 700; line-height: 1.2; }
+    h3 { font-size: 1.15rem; font-weight: 700; }
+    p  { font-size: 1rem; color: var(--muted); line-height: 1.7; }
+
+    /* ─── BUTTONS ─────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .85rem 1.75rem; border-radius: 50px;
+      font-size: 1rem; font-weight: 600;
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary {
+      background: var(--green); color: var(--white);
+      box-shadow: 0 6px 24px rgba(37,211,102,.35);
+    }
+    .btn-primary:hover { background: #1DB954; box-shadow: 0 8px 32px rgba(37,211,102,.45); }
+    .btn-outline {
+      background: transparent; color: var(--dark);
+      border: 2px solid var(--dark);
+    }
+    .btn-outline:hover { background: var(--accent); }
+
+    /* ─── LAYOUT HELPERS ──────────────────────────────── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 1.25rem; }
+    .section { padding: 5rem 0; }
+    .section-label {
+      display: inline-block; background: var(--accent);
+      color: var(--dark); font-size: .78rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: .35rem .9rem; border-radius: 50px; margin-bottom: 1rem;
+    }
+    .section-title { color: var(--text); margin-bottom: .75rem; }
+    .section-sub { max-width: 560px; }
+    .text-center { text-align: center; }
+    .text-center .section-sub { margin: 0 auto; }
+
+    /* ─── SCROLL REVEAL ───────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .3s; }
+    .reveal-delay-4 { transition-delay: .4s; }
+    .reveal-delay-5 { transition-delay: .5s; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    /* ─── NAV ─────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+      background: rgba(247,249,250,.92); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(37,211,102,.12);
+      transition: box-shadow .3s;
+    }
+    nav.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,.08); }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1120px; margin: 0 auto; padding: .9rem 1.25rem;
+    }
+    .nav-logo { display: flex; align-items: center; gap: .6rem; }
+    .nav-logo img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+    .nav-logo span { font-weight: 800; font-size: 1.1rem; color: var(--dark); }
+    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+    .nav-links a { font-size: .92rem; font-weight: 500; color: var(--text); transition: color .2s; }
+    .nav-links a:hover { color: var(--green); }
+    .nav-cta { padding: .55rem 1.3rem; font-size: .9rem; }
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; cursor: pointer; padding: 4px;
+    }
+    .hamburger span {
+      display: block; width: 24px; height: 2.5px;
+      background: var(--dark); border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+    .mobile-menu {
+      display: none; flex-direction: column; gap: 0;
+      background: var(--white); border-top: 1px solid rgba(37,211,102,.12);
+      padding: .5rem 1.25rem 1.25rem;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      padding: .8rem 0; font-size: 1rem; font-weight: 500;
+      border-bottom: 1px solid #F0F0F0; color: var(--text);
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu .btn { margin-top: .75rem; text-align: center; justify-content: center; }
+    @media (max-width: 768px) {
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+    }
+
+    /* ─── HERO ────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center;
+      padding: 7rem 0 4rem;
+      background: linear-gradient(135deg, #F7F9FA 0%, #E8F8F1 60%, #D4F4E2 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute;
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(37,211,102,.12) 0%, transparent 70%);
+      top: -150px; right: -150px; pointer-events: none;
+    }
+    .hero::after {
+      content: ''; position: absolute;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(18,140,126,.08) 0%, transparent 70%);
+      bottom: -100px; left: -100px; pointer-events: none;
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3rem; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--accent); color: var(--dark);
+      font-size: .82rem; font-weight: 700; padding: .4rem 1rem;
+      border-radius: 50px; margin-bottom: 1.25rem;
+      letter-spacing: .04em;
+    }
+    .hero-badge::before { content: '●'; font-size: .5rem; animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:.3} }
+    .hero h1 { margin-bottom: 1.25rem; }
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--green), var(--dark));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p { font-size: 1.1rem; max-width: 480px; margin-bottom: 2rem; }
+    .hero-buttons { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2.5rem; }
+    .trust-badges { display: flex; flex-wrap: wrap; gap: .6rem; }
+    .trust-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: var(--white); border: 1px solid rgba(37,211,102,.3);
+      padding: .4rem .9rem; border-radius: 50px;
+      font-size: .78rem; font-weight: 600; color: var(--dark);
+      box-shadow: 0 2px 8px rgba(37,211,102,.1);
+    }
+    .trust-badge svg { width: 14px; height: 14px; }
+
+    /* Phone mockup */
+    .hero-visual { position: relative; display: flex; justify-content: center; align-items: center; }
+    .phone-mockup {
+      position: relative; width: 260px; margin: 0 auto;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)} }
+    .phone-frame {
+      background: var(--text); border-radius: 40px;
+      padding: 12px 8px; box-shadow: 0 30px 80px rgba(31,41,55,.35);
+      position: relative;
+    }
+    .phone-notch {
+      width: 80px; height: 22px; background: var(--text);
+      border-radius: 0 0 14px 14px; margin: 0 auto -4px;
+      position: relative; z-index: 2;
+    }
+    .phone-screen {
+      background: var(--bg); border-radius: 30px;
+      overflow: hidden; min-height: 480px;
+      padding: 1rem .75rem;
+    }
+    .phone-statusbar {
+      display: flex; justify-content: space-between;
+      font-size: .6rem; font-weight: 700; color: var(--text);
+      margin-bottom: .75rem; padding: 0 .25rem;
+    }
+    .phone-app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .phone-app-header span { font-size: .75rem; font-weight: 800; color: var(--dark); }
+    .phone-score-card {
+      background: linear-gradient(135deg, var(--green), var(--dark));
+      border-radius: 16px; padding: 1rem; margin-bottom: .75rem; color: var(--white);
+    }
+    .phone-score-card .label { font-size: .6rem; opacity: .85; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+    .phone-score-card .score { font-size: 2rem; font-weight: 900; line-height: 1; }
+    .phone-score-card .sub { font-size: .65rem; opacity: .8; }
+    .phone-mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .75rem; }
+    .phone-mini-card {
+      background: var(--white); border-radius: 12px; padding: .65rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .phone-mini-card .mc-label { font-size: .55rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .phone-mini-card .mc-value { font-size: .9rem; font-weight: 800; color: var(--text); }
+    .phone-mini-card .mc-sub { font-size: .55rem; color: var(--green); font-weight: 600; }
+    .phone-bar-row { margin-bottom: .5rem; }
+    .phone-bar-label { display: flex; justify-content: space-between; font-size: .58rem; color: var(--muted); margin-bottom: .25rem; }
+    .phone-bar-track { background: #E5E7EB; border-radius: 99px; height: 6px; }
+    .phone-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--green), var(--dark)); }
+
+    .hero-logo {
+      position: absolute; top: -20px; right: -20px;
+      width: 72px; height: 72px; border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(37,211,102,.3);
+      background: var(--white); padding: 6px;
+      animation: float 4s ease-in-out infinite .5s;
+    }
+
+    @media (max-width: 768px) {
+      .hero-grid { grid-template-columns: 1fr; text-align: center; }
+      .hero p, .hero .trust-badges, .hero-buttons { justify-content: center; }
+      .hero p { max-width: 100%; }
+      .hero-visual { margin-top: 2rem; }
+      .phone-mockup { width: 220px; }
+      .phone-screen { min-height: 400px; }
+      .hero-logo { display: none; }
+    }
+
+    /* ─── FEATURES ────────────────────────────────────── */
+    .features { background: var(--white); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--bg); border-radius: var(--radius);
+      padding: 1.75rem; border: 1px solid rgba(37,211,102,.12);
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+      border-color: rgba(37,211,102,.3);
+    }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.1rem; font-size: 1.5rem;
+    }
+    .feature-card h3 { margin-bottom: .4rem; color: var(--text); }
+    .feature-card p { font-size: .92rem; }
+
+    /* ─── HOW IT WORKS ────────────────────────────────── */
+    .hiw { background: linear-gradient(135deg, #E8F8F1 0%, var(--bg) 100%); }
+    .hiw-steps {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem; margin-top: 3rem; position: relative;
+    }
+    .hiw-step {
+      background: var(--white); border-radius: var(--radius);
+      padding: 2rem; position: relative; border: 1px solid rgba(37,211,102,.15);
+      box-shadow: var(--shadow);
+    }
+    .hiw-step-num {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--dark));
+      color: var(--white); font-weight: 900; font-size: 1.15rem;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1rem; box-shadow: 0 4px 16px rgba(37,211,102,.35);
+    }
+    .hiw-icon { font-size: 2rem; margin-bottom: .75rem; }
+    .hiw-step h3 { margin-bottom: .5rem; }
+    .hiw-connector {
+      display: none;
+    }
+    @media (min-width: 900px) {
+      .hiw-steps { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* ─── WHY OFFLINE ─────────────────────────────────── */
+    .why-offline { background: var(--white); }
+    .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; margin-top: 3rem; }
+    .why-visual {
+      background: linear-gradient(135deg, var(--accent), #B8F0D0);
+      border-radius: 24px; padding: 2.5rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .why-visual-title { font-weight: 800; font-size: 1.1rem; color: var(--dark); margin-bottom: .25rem; }
+    .why-item {
+      display: flex; align-items: flex-start; gap: .75rem;
+      background: var(--white); border-radius: 12px;
+      padding: 1rem; box-shadow: 0 2px 12px rgba(37,211,102,.1);
+    }
+    .why-item-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .why-item-text h4 { font-size: .9rem; font-weight: 700; color: var(--text); }
+    .why-item-text p { font-size: .82rem; margin-top: .1rem; }
+    .why-benefits { display: flex; flex-direction: column; gap: .75rem; margin-top: 1.5rem; }
+    .why-benefit {
+      display: flex; align-items: center; gap: .75rem;
+      font-size: .95rem; font-weight: 500; color: var(--text);
+    }
+    .why-benefit::before {
+      content: '✓'; width: 24px; height: 24px; border-radius: 50%;
+      background: var(--green); color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 900; flex-shrink: 0;
+    }
+    @media (max-width: 768px) { .why-grid { grid-template-columns: 1fr; } }
+
+    /* ─── DOWNLOAD ────────────────────────────────────── */
+    .download-section {
+      background: linear-gradient(135deg, var(--dark) 0%, #0F6B5F 100%);
+      position: relative; overflow: hidden;
+    }
+    .download-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2325D366' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    .download-inner { position: relative; z-index: 1; text-align: center; }
+    .download-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: rgba(37,211,102,.2); border: 1px solid rgba(37,211,102,.4);
+      color: var(--green); font-size: .82rem; font-weight: 700;
+      padding: .4rem 1rem; border-radius: 50px; margin-bottom: 1.25rem;
+    }
+    .download-section h2 { color: var(--white); margin-bottom: .75rem; }
+    .download-section p { color: rgba(255,255,255,.75); margin-bottom: 2rem; }
+    .download-card {
+      background: rgba(255,255,255,.08); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.15); border-radius: 20px;
+      padding: 2rem; max-width: 420px; margin: 0 auto 2rem;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;
+    }
+    .dl-stat { text-align: center; }
+    .dl-stat-label { font-size: .72rem; color: rgba(255,255,255,.6); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .dl-stat-value { font-size: 1rem; font-weight: 800; color: var(--white); margin-top: .25rem; }
+    .download-btn {
+      display: inline-flex; align-items: center; gap: .75rem;
+      background: var(--green); color: var(--white);
+      padding: 1rem 2.25rem; border-radius: 50px;
+      font-size: 1.1rem; font-weight: 700;
+      box-shadow: 0 8px 32px rgba(37,211,102,.4);
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+    .download-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(37,211,102,.55);
+      background: #1DB954;
+    }
+    .download-btn svg { width: 22px; height: 22px; }
+
+    /* ─── INSTALL GUIDE ───────────────────────────────── */
+    .install { background: var(--bg); }
+    .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; margin-top: 3rem; }
+    .install-steps { display: flex; flex-direction: column; gap: 1rem; }
+    .install-step {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: var(--white); border-radius: var(--radius);
+      padding: 1.1rem; border: 1px solid rgba(37,211,102,.12);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .install-step:hover { border-color: var(--green); box-shadow: 0 2px 16px rgba(37,211,102,.1); }
+    .install-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--dark));
+      color: var(--white); font-weight: 900; font-size: .85rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .install-step p { font-size: .92rem; color: var(--text); margin-top: 0; }
+    .install-note {
+      background: linear-gradient(135deg, #FFF9E6, #FFFBF0);
+      border: 1px solid #FDE68A; border-radius: var(--radius);
+      padding: 1.25rem; display: flex; gap: .75rem; align-items: flex-start;
+    }
+    .install-note-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: .1rem; }
+    .install-note p { font-size: .88rem; color: #92400E; margin: 0; }
+    @media (max-width: 768px) { .install-grid { grid-template-columns: 1fr; } }
+
+    /* ─── SCREENSHOTS ─────────────────────────────────── */
+    .screenshots { background: var(--white); }
+    .ss-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .ss-card {
+      border-radius: 20px; overflow: hidden;
+      box-shadow: var(--shadow); border: 1px solid rgba(37,211,102,.1);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .ss-card:hover { transform: translateY(-5px) scale(1.01); box-shadow: var(--shadow-lg); }
+    .ss-header {
+      padding: .75rem 1rem; font-size: .75rem; font-weight: 700;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .ss-body { background: var(--bg); padding: 1rem; min-height: 260px; }
+    /* Dashboard mock */
+    .ss-dashboard .ss-header { background: linear-gradient(135deg, var(--green), var(--dark)); color: white; }
+    .ss-dashboard .ss-body { background: #F0FBF5; }
+    /* Analysis mock */
+    .ss-analysis .ss-header { background: linear-gradient(135deg, #667EEA, #764BA2); color: white; }
+    /* Predictions mock */
+    .ss-predictions .ss-header { background: linear-gradient(135deg, #F093FB, #F5576C); color: white; }
+    /* Score mock */
+    .ss-score .ss-header { background: linear-gradient(135deg, #4FACFE, #00F2FE); color: white; }
+
+    .ss-placeholder {
+      display: flex; flex-direction: column; gap: .6rem; padding: .25rem 0;
+    }
+    .ss-bar { height: 8px; border-radius: 4px; background: var(--accent); }
+    .ss-bar-alt { height: 8px; border-radius: 4px; background: #DCE8F8; }
+    .ss-circle {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--dark));
+      margin: .5rem auto; display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 900; font-size: .9rem;
+    }
+    .ss-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .ss-mini-item {
+      background: white; border-radius: 10px; padding: .6rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+    }
+    .ss-mini-item .smi-label { font-size: .55rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .ss-mini-item .smi-val { font-size: .85rem; font-weight: 800; color: var(--text); }
+    .ss-tag { font-size: .65rem; background: var(--accent); color: var(--dark); padding: .15rem .5rem; border-radius: 99px; font-weight: 700; }
+
+    /* ─── FAQ ─────────────────────────────────────────── */
+    .faq { background: var(--bg); }
+    .faq-list { max-width: 720px; margin: 3rem auto 0; }
+    .faq-item {
+      border-radius: var(--radius); margin-bottom: .75rem;
+      background: var(--white); border: 1px solid rgba(37,211,102,.12);
+      overflow: hidden; transition: border-color .2s;
+    }
+    .faq-item.open { border-color: var(--green); }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.25rem 1.5rem; cursor: pointer;
+      font-weight: 600; font-size: .97rem; color: var(--text);
+      user-select: none;
+    }
+    .faq-q:hover { color: var(--dark); }
+    .faq-chevron {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      transition: transform .3s; flex-shrink: 0;
+      font-size: .7rem; color: var(--dark);
+    }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); background: var(--green); color: white; }
+    .faq-a {
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s ease, padding .35s;
+      padding: 0 1.5rem;
+    }
+    .faq-a-inner { padding-bottom: 1.25rem; font-size: .93rem; color: var(--muted); }
+    .faq-item.open .faq-a { max-height: 200px; }
+
+    /* ─── CONTACT ─────────────────────────────────────── */
+    .contact { background: var(--white); }
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem; }
+    .contact-card {
+      background: var(--bg); border-radius: var(--radius);
+      padding: 2rem; border: 1px solid rgba(37,211,102,.15);
+      display: flex; flex-direction: column; align-items: flex-start; gap: .5rem;
+      transition: box-shadow var(--transition), border-color var(--transition);
+    }
+    .contact-card:hover { box-shadow: var(--shadow); border-color: var(--green); }
+    .contact-icon { font-size: 2rem; }
+    .contact-card h3 { color: var(--text); }
+    .contact-card a { color: var(--dark); font-weight: 600; font-size: .95rem; }
+    .contact-card a:hover { color: var(--green); text-decoration: underline; }
+    @media (max-width: 600px) { .contact-grid { grid-template-columns: 1fr; } }
+
+    /* ─── FOOTER ──────────────────────────────────────── */
+    footer {
+      background: var(--text); color: rgba(255,255,255,.75);
+      padding: 3rem 0 2rem;
+    }
+    .footer-inner {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1.25rem; text-align: center;
+    }
+    .footer-logo { display: flex; align-items: center; gap: .6rem; }
+    .footer-logo img { width: 36px; height: 36px; border-radius: 8px; }
+    .footer-logo span { font-weight: 800; font-size: 1rem; color: var(--white); }
+    .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; }
+    .footer-links a { font-size: .88rem; color: rgba(255,255,255,.65); transition: color .2s; }
+    .footer-links a:hover { color: var(--green); }
+    .footer-divider { width: 100%; height: 1px; background: rgba(255,255,255,.1); }
+    .footer-bottom { font-size: .82rem; color: rgba(255,255,255,.45); }
+
+    /* ─── FLOATING DOWNLOAD BUTTON (MOBILE) ───────────── */
+    .fab {
+      display: none; position: fixed; bottom: 1.5rem; right: 1.25rem; z-index: 800;
+      align-items: center; gap: .55rem;
+      background: var(--green); color: var(--white);
+      padding: .85rem 1.5rem; border-radius: 50px;
+      font-size: .92rem; font-weight: 700;
+      box-shadow: 0 6px 24px rgba(37,211,102,.5);
+      animation: fab-bounce 2s ease-in-out infinite;
+    }
+    @keyframes fab-bounce { 0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)} }
+    .fab:hover { background: #1DB954; }
+    @media (max-width: 768px) { .fab { display: flex; } }
+  </style>
+</head>
+<body>
+
+<!-- ░░ FLOATING DOWNLOAD (MOBILE) ░░ -->
+<a class="fab" href="https://github.com/USERNAME/spendx/releases/latest/download/SpendX.apk" download>
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
+  Download APK
+</a>
+
+<!-- ░░ NAV ░░ -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="logo.png" alt="SpendX Logo" />
+      <span>SpendX™</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <a href="https://github.com/USERNAME/spendx/releases/latest/download/SpendX.apk" class="btn btn-primary nav-cta" download>Download APK</a>
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#features" class="mobile-link">Features</a>
+    <a href="#how-it-works" class="mobile-link">How It Works</a>
+    <a href="#download" class="mobile-link">Download</a>
+    <a href="#faq" class="mobile-link">FAQ</a>
+    <a href="#contact" class="mobile-link">Contact</a>
+    <a href="https://github.com/USERNAME/spendx/releases/latest/download/SpendX.apk" class="btn btn-primary" download>Download APK</a>
+  </div>
+</nav>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero" id="home">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content reveal">
+        <div class="hero-badge">Android App · v1.0.0</div>
+        <h1>Understand Your <span class="highlight">Spending.</span><br>Predict Your Financial Habits.</h1>
+        <p>SpendX analyzes your OPay bank statements offline and provides spending insights, financial health scores, habit detection, and future spending predictions.</p>
+        <div class="hero-buttons">
+          <a href="https://github.com/USERNAME/spendx/releases/latest/download/SpendX.apk" class="btn btn-primary" download>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
+            Download APK
+          </a>
+          <a href="#features" class="btn btn-outline">Learn More</a>
+        </div>
+        <div class="trust-badges">
+          <div class="trust-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#25D366" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            100% Offline
+          </div>
+          <div class="trust-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#25D366" stroke-width="2.5"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            Privacy First
+          </div>
+          <div class="trust-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#25D366" stroke-width="2.5"><path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            No Cloud Uploads
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal reveal-delay-2">
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="phone-statusbar">
+                <span>9:41</span>
+                <span>●●● ▲</span>
+              </div>
+              <div class="phone-app-header">
+                <span>SpendX™</span>
+                <img src="logo.png" alt="SpendX" style="width:24px;height:24px;border-radius:6px;" />
+              </div>
+              <div class="phone-score-card">
+                <div class="label">Financial Health Score</div>
+                <div class="score">78</div>
+                <div class="sub">↑ 4 pts from last month · Good</div>
+              </div>
+              <div class="phone-mini-cards">
+                <div class="phone-mini-card">
+                  <div class="mc-label">Spent</div>
+                  <div class="mc-value">₦48k</div>
+                  <div class="mc-sub">This month</div>
+                </div>
+                <div class="phone-mini-card">
+                  <div class="mc-label">Predicted</div>
+                  <div class="mc-value">₦52k</div>
+                  <div class="mc-sub">Next month</div>
+                </div>
+              </div>
+              <div style="background:#fff;border-radius:12px;padding:.75rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+                <div style="font-size:.6rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">Spending Breakdown</div>
+                <div class="phone-bar-row"><div class="phone-bar-label"><span>Food & Dining</span><span>38%</span></div><div class="phone-bar-track"><div class="phone-bar-fill" style="width:38%"></div></div></div>
+                <div class="phone-bar-row"><div class="phone-bar-label"><span>Transport</span><span>22%</span></div><div class="phone-bar-track"><div class="phone-bar-fill" style="width:22%;background:linear-gradient(90deg,#667EEA,#764BA2)"></div></div></div>
+                <div class="phone-bar-row"><div class="phone-bar-label"><span>Utilities</span><span>18%</span></div><div class="phone-bar-track"><div class="phone-bar-fill" style="width:18%;background:linear-gradient(90deg,#4FACFE,#00F2FE)"></div></div></div>
+                <div class="phone-bar-row"><div class="phone-bar-label"><span>Others</span><span>22%</span></div><div class="phone-bar-track"><div class="phone-bar-fill" style="width:22%;background:linear-gradient(90deg,#F093FB,#F5576C)"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <img class="hero-logo" src="logo.png" alt="SpendX" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FEATURES ░░ -->
+<section class="section features" id="features">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="section-label">Features</div>
+      <h2 class="section-title">Everything You Need to Know Your Finances</h2>
+      <p class="section-sub">Six powerful tools, zero internet required. SpendX turns your OPay statement into actionable financial intelligence.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">📵</div>
+        <h3>Offline Analysis</h3>
+        <p>All processing happens entirely on your device. No data ever leaves your phone — not even a single byte.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">💡</div>
+        <h3>Spending Insights</h3>
+        <p>Visualize exactly where your money goes — broken down by category, merchant, and time period.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">❤️</div>
+        <h3>Financial Health Score</h3>
+        <p>Get a clear score that measures your spending behavior and tracks improvement over time.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">🔁</div>
+        <h3>Habit Detection</h3>
+        <p>SpendX identifies recurring patterns in your spending — subscriptions, impulse buys, and more.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🔮</div>
+        <h3>Future Predictions</h3>
+        <p>Based on your history, SpendX estimates your future expenses so you can budget ahead confidently.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">🔒</div>
+        <h3>Privacy First</h3>
+        <p>Your bank statement data stays on your device permanently. SpendX requires no account, no login, no cloud.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ HOW IT WORKS ░░ -->
+<section class="section hiw" id="how-it-works">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">Three Steps to Financial Clarity</h2>
+      <p class="section-sub">Getting started with SpendX takes under two minutes.</p>
+    </div>
+    <div class="hiw-steps">
+      <div class="hiw-step reveal reveal-delay-1">
+        <div class="hiw-step-num">1</div>
+        <div class="hiw-icon">📄</div>
+        <h3>Export Your OPay Statement</h3>
+        <p>Open your OPay app, go to transaction history, and export your bank statement as a PDF or CSV file to your device.</p>
+      </div>
+      <div class="hiw-step reveal reveal-delay-2">
+        <div class="hiw-step-num">2</div>
+        <div class="hiw-icon">📤</div>
+        <h3>Upload It into SpendX</h3>
+        <p>Open SpendX and tap "Upload Statement". Select your exported file — SpendX reads and processes it instantly, on-device.</p>
+      </div>
+      <div class="hiw-step reveal reveal-delay-3">
+        <div class="hiw-step-num">3</div>
+        <div class="hiw-icon">📊</div>
+        <h3>Receive Detailed Insights</h3>
+        <p>In seconds, SpendX generates your financial health score, spending breakdown, habit report, and future predictions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ WHY OFFLINE ░░ -->
+<section class="section why-offline" id="why-offline">
+  <div class="container">
+    <div class="why-grid">
+      <div class="reveal">
+        <div class="section-label">Why Offline?</div>
+        <h2 class="section-title">Your Bank Statement Is Nobody Else's Business</h2>
+        <p>Most financial apps upload your sensitive data to remote servers. SpendX was built differently — every calculation, every insight, every prediction runs locally on your Android device.</p>
+        <div class="why-benefits">
+          <div class="why-benefit">No internet connection required</div>
+          <div class="why-benefit">Faster analysis — no upload wait time</div>
+          <div class="why-benefit">Better privacy — zero server exposure</div>
+          <div class="why-benefit">No cloud storage of your financial data</div>
+          <div class="why-benefit">Full control stays with you, always</div>
+        </div>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <div class="why-visual">
+          <div class="why-visual-title">🛡️ Data Flow Comparison</div>
+          <div class="why-item">
+            <div class="why-item-icon">✅</div>
+            <div class="why-item-text">
+              <h4>SpendX — Offline</h4>
+              <p>Your statement → Your device → Your insights. Nothing leaves.</p>
+            </div>
+          </div>
+          <div class="why-item" style="opacity:.65">
+            <div class="why-item-icon" style="background:#FEE2E2">⚠️</div>
+            <div class="why-item-text">
+              <h4>Typical Finance Apps</h4>
+              <p>Your statement → Their servers → Their databases → Your screen.</p>
+            </div>
+          </div>
+          <div style="background:white;border-radius:12px;padding:1rem;box-shadow:0 2px 12px rgba(37,211,102,.1)">
+            <div style="font-size:.75rem;font-weight:700;color:var(--dark);margin-bottom:.5rem">SpendX Privacy Guarantee</div>
+            <div style="font-size:.82rem;color:var(--muted)">SpendX never requests network permissions for your financial data. Your OPay statement is processed in-memory and never written to any external destination.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ DOWNLOAD ░░ -->
+<section class="section download-section" id="download">
+  <div class="container">
+    <div class="download-inner">
+      <div class="download-badge reveal">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
+        Official Release · Virus-Free · Verified
+      </div>
+      <h2 class="reveal">Get SpendX for Android</h2>
+      <p class="reveal">Free to download. No subscription. No hidden fees. Just honest financial insights.</p>
+      <div class="download-card reveal">
+        <div class="dl-stat"><div class="dl-stat-label">Version</div><div class="dl-stat-value">v1.0.0</div></div>
+        <div class="dl-stat"><div class="dl-stat-label">Platform</div><div class="dl-stat-value">Android</div></div>
+        <div class="dl-stat"><div class="dl-stat-label">File</div><div class="dl-stat-value">SpendX.apk</div></div>
+      </div>
+      <a href="https://github.com/USERNAME/spendx/releases/latest/download/SpendX.apk" class="download-btn reveal" download>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
+        Download APK — Free
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ INSTALL GUIDE ░░ -->
+<section class="section install" id="install">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="section-label">Installation</div>
+      <h2 class="section-title">How to Install SpendX</h2>
+      <p class="section-sub">Installing an APK takes under a minute. Here's exactly how to do it.</p>
+    </div>
+    <div class="install-grid">
+      <div class="install-steps">
+        <div class="install-step reveal reveal-delay-1">
+          <div class="install-num">1</div>
+          <p><strong>Download the APK</strong> using the button above or the link on this page.</p>
+        </div>
+        <div class="install-step reveal reveal-delay-2">
+          <div class="install-num">2</div>
+          <p><strong>Open the downloaded file</strong> from your notifications bar or file manager.</p>
+        </div>
+        <div class="install-step reveal reveal-delay-3">
+          <div class="install-num">3</div>
+          <p><strong>If prompted</strong>, tap "Settings" and enable <em>Install Unknown Apps</em> for your browser or file manager.</p>
+        </div>
+        <div class="install-step reveal reveal-delay-4">
+          <div class="install-num">4</div>
+          <p><strong>Tap Install</strong> on the Android installation dialog and wait a moment.</p>
+        </div>
+        <div class="install-step reveal reveal-delay-5">
+          <div class="install-num">5</div>
+          <p><strong>Open SpendX</strong>, upload your OPay statement, and start receiving insights.</p>
+        </div>
+      </div>
+      <div class="reveal reveal-delay-2" style="display:flex;flex-direction:column;gap:1.25rem;justify-content:center">
+        <div class="install-note">
+          <div class="install-note-icon">ℹ️</div>
+          <p><strong>SpendX is not available on Google Play yet.</strong> Installing from APK is safe when downloaded directly from the official SpendX website (theprompt.org.ng). The APK is signed and verified.</p>
+        </div>
+        <div style="background:var(--white);border-radius:var(--radius);padding:1.5rem;border:1px solid rgba(37,211,102,.15);box-shadow:var(--shadow)">
+          <div style="font-size:.82rem;font-weight:700;color:var(--dark);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em">System Requirements</div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div style="display:flex;justify-content:space-between;font-size:.88rem">
+              <span style="color:var(--muted)">Android Version</span>
+              <span style="font-weight:700;color:var(--text)">6.0+</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.88rem">
+              <span style="color:var(--muted)">Storage</span>
+              <span style="font-weight:700;color:var(--text)">~20 MB</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.88rem">
+              <span style="color:var(--muted)">Internet</span>
+              <span style="font-weight:700;color:var(--green)">Not required</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.88rem">
+              <span style="color:var(--muted)">Compatible with</span>
+              <span style="font-weight:700;color:var(--text)">OPay Statements</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ SCREENSHOTS ░░ -->
+<section class="section screenshots" id="screenshots">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="section-label">App Preview</div>
+      <h2 class="section-title">A Closer Look Inside SpendX</h2>
+      <p class="section-sub">Clean, focused interfaces designed to make financial data easy to understand at a glance.</p>
+    </div>
+    <div class="ss-grid">
+      <div class="ss-card ss-dashboard reveal reveal-delay-1">
+        <div class="ss-header">
+          <span>Dashboard</span>
+          <span class="ss-tag">Home</span>
+        </div>
+        <div class="ss-body">
+          <div class="ss-placeholder">
+            <div class="ss-circle">78</div>
+            <div class="ss-mini-grid">
+              <div class="ss-mini-item"><div class="smi-label">Spent</div><div class="smi-val">₦48k</div></div>
+              <div class="ss-mini-item"><div class="smi-label">Predicted</div><div class="smi-val">₦52k</div></div>
+            </div>
+            <div class="ss-bar" style="width:100%"></div>
+            <div class="ss-bar" style="width:75%"></div>
+            <div class="ss-bar" style="width:55%"></div>
+            <div class="ss-bar" style="width:40%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ss-card ss-analysis reveal reveal-delay-2">
+        <div class="ss-header">
+          <span>Spending Analysis</span>
+          <span class="ss-tag" style="background:#E0E7FF;color:#4338CA">Charts</span>
+        </div>
+        <div class="ss-body">
+          <div class="ss-placeholder">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;align-items:end;height:100px;margin-bottom:.75rem">
+              <div style="background:linear-gradient(180deg,#667EEA,#764BA2);border-radius:6px;height:80%"></div>
+              <div style="background:linear-gradient(180deg,#25D366,#128C7E);border-radius:6px;height:55%"></div>
+              <div style="background:linear-gradient(180deg,#4FACFE,#00F2FE);border-radius:6px;height:70%"></div>
+              <div style="background:linear-gradient(180deg,#F093FB,#F5576C);border-radius:6px;height:40%"></div>
+            </div>
+            <div class="ss-bar-alt" style="width:100%"></div>
+            <div class="ss-bar-alt" style="width:80%"></div>
+            <div class="ss-bar-alt" style="width:60%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ss-card ss-predictions reveal reveal-delay-3">
+        <div class="ss-header">
+          <span>Predictions</span>
+          <span class="ss-tag" style="background:#FFE4E6;color:#BE123C">AI</span>
+        </div>
+        <div class="ss-body">
+          <div class="ss-placeholder">
+            <div style="display:flex;flex-direction:column;gap:.5rem">
+              <div style="background:white;border-radius:10px;padding:.6rem;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+                <div style="font-size:.6rem;color:var(--muted);font-weight:600">Next Month Estimate</div>
+                <div style="font-size:1.1rem;font-weight:900;color:var(--text)">₦52,400</div>
+              </div>
+              <div class="ss-bar" style="background:linear-gradient(90deg,#F093FB,#F5576C)"></div>
+              <div class="ss-bar" style="background:linear-gradient(90deg,#F093FB,#F5576C);width:70%"></div>
+              <div class="ss-bar" style="background:linear-gradient(90deg,#F093FB,#F5576C);width:85%"></div>
+              <div class="ss-mini-grid">
+                <div class="ss-mini-item"><div class="smi-label">Trend</div><div class="smi-val" style="color:#16A34A">↑ 8%</div></div>
+                <div class="ss-mini-item"><div class="smi-label">Risk</div><div class="smi-val" style="color:#D97706">Medium</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ss-card ss-score reveal reveal-delay-4">
+        <div class="ss-header">
+          <span>Financial Score</span>
+          <span class="ss-tag" style="background:#E0F2FE;color:#0369A1">Score</span>
+        </div>
+        <div class="ss-body">
+          <div class="ss-placeholder">
+            <div style="text-align:center;margin-bottom:.5rem">
+              <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#4FACFE,#00F2FE);margin:.5rem auto;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.3rem;box-shadow:0 4px 20px rgba(79,172,254,.4)">78</div>
+              <div style="font-size:.7rem;color:var(--muted);font-weight:600">Good · ↑ from 74</div>
+            </div>
+            <div class="ss-bar" style="background:linear-gradient(90deg,#4FACFE,#00F2FE)"></div>
+            <div class="ss-bar" style="background:linear-gradient(90deg,#4FACFE,#00F2FE);width:78%"></div>
+            <div class="ss-mini-grid">
+              <div class="ss-mini-item"><div class="smi-label">Habits</div><div class="smi-val">7</div></div>
+              <div class="ss-mini-item"><div class="smi-label">Alerts</div><div class="smi-val" style="color:#D97706">2</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FAQ ░░ -->
+<section class="section faq" id="faq">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="section-label">FAQ</div>
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <p class="section-sub">Everything you need to know before you download.</p>
+    </div>
+    <div class="faq-list reveal">
+      <div class="faq-item">
+        <div class="faq-q">Is SpendX free to use? <span class="faq-chevron">▾</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Yes, completely. SpendX is free to download and use with no subscription, no in-app purchases, and no hidden charges. All features are available from the moment you install it.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does SpendX require an internet connection? <span class="faq-chevron">▾</span></div>
+        <div class="faq-a"><div class="faq-a-inner">No. SpendX works entirely offline. All analysis and predictions happen on your device. You only need internet to download the app itself — never to use it.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is my bank statement uploaded anywhere? <span class="faq-chevron">▾</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Absolutely not. Your statement is processed in-memory on your Android device and is never sent to any server, cloud service, or third party. SpendX has no backend that receives your data.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Which statement formats does SpendX support? <span class="faq-chevron">▾</span></div>
+        <div class="faq-a"><div class="faq-a-inner">SpendX currently supports OPay bank statement exports in PDF and CSV formats. Support for additional Nigerian banks is planned for future releases.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is my financial data truly private? <span class="faq-chevron">▾</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Yes. SpendX does not request any network permissions for data transmission. Your financial information stays on your device and is fully under your control. We believe your spending data is yours alone.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ CONTACT ░░ -->
+<section class="section contact" id="contact">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="section-label">Contact</div>
+      <h2 class="section-title">Get in Touch</h2>
+      <p class="section-sub">Questions about SpendX? We'd love to hear from you.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-card reveal reveal-delay-1">
+        <div class="contact-icon">🌐</div>
+        <h3>Website</h3>
+        <p>Learn more about ThePrompt and our other projects.</p>
+        <a href="https://theprompt.org.ng" target="_blank" rel="noopener">theprompt.org.ng</a>
+      </div>
+      <div class="contact-card reveal reveal-delay-2">
+        <div class="contact-icon">📧</div>
+        <h3>Email</h3>
+        <p>Send us a message and we'll get back to you promptly.</p>
+        <a href="mailto:info@theprompt.org.ng">info@theprompt.org.ng</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FOOTER ░░ -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <img src="logo.png" alt="SpendX Logo" />
+        <span>SpendX™</span>
+      </div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#download">Download</a>
+        <a href="#faq">FAQ</a>
+        <a href="#contact">Contact</a>
+        <a href="https://theprompt.org.ng" target="_blank" rel="noopener">theprompt.org.ng</a>
+        <a href="mailto:info@theprompt.org.ng">info@theprompt.org.ng</a>
+      </div>
+      <div class="footer-divider"></div>
+      <p style="font-size:.85rem;color:rgba(255,255,255,.65)">SpendX™ by ThePrompt · Created by Victor Omiyale</p>
+      <div class="footer-bottom">© 2026 ThePrompt. All Rights Reserved.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Nav shadow on scroll
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // ── Hamburger menu
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+  });
+  // Close on link click
+  document.querySelectorAll('.mobile-link').forEach(link => {
+    link.addEventListener('click', () => {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+    });
+  });
+
+  // ── Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+
+  // ── FAQ accordion
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(o => o.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+
+  // ── Smooth anchor scroll (support for older browsers)
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+</body>
+</html>
