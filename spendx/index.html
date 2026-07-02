@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finance Habit Analyzer — Offline Statement Insights</title>
+
+<!--
+  FINANCE HABIT ANALYZER
+  =======================
+  100% offline, client-side financial behavior analyzer.
+  No backend, no network calls. All processing happens in the browser.
+
+  External libraries (vendored locally in /vendor so the app works with
+  no internet connection — see README.md for where to drop the files):
+    - Chart.js   (charts)
+    - PapaParse  (CSV parsing)
+    - SheetJS/xlsx (Excel parsing)
+-->
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div class="app-shell">
+
+  <!-- ---------- SIDEBAR ---------- -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">FH</span>
+      <div class="brand-text">
+        <strong>Finance Habit</strong>
+        <small>Analyzer</small>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Primary">
+      <span class="nav-section-label">Statement Analysis</span>
+      <button class="nav-link is-active" data-target="view-dashboard" type="button">
+        <span class="nav-ico" aria-hidden="true">▣</span> Overview
+      </button>
+      <button class="nav-link" data-target="view-charts" type="button">
+        <span class="nav-ico" aria-hidden="true">◴</span> Charts
+      </button>
+      <button class="nav-link" data-target="view-insights" type="button">
+        <span class="nav-ico" aria-hidden="true">✺</span> Habit Insights
+      </button>
+      <button class="nav-link" data-target="view-health" type="button">
+        <span class="nav-ico" aria-hidden="true">♥</span> Health Score
+      </button>
+      <button class="nav-link" data-target="view-predictions" type="button">
+        <span class="nav-ico" aria-hidden="true">↝</span> Predictions
+      </button>
+      <button class="nav-link" data-target="view-transactions" type="button">
+        <span class="nav-ico" aria-hidden="true">≡</span> Transactions
+      </button>
+
+      <span class="nav-section-label">Deeper Insights</span>
+      <button class="nav-link" data-target="view-recipients" type="button">
+        <span class="nav-ico" aria-hidden="true">⇄</span> Recipients
+      </button>
+      <button class="nav-link" data-target="view-miscellaneous" type="button">
+        <span class="nav-ico" aria-hidden="true">?</span> Miscellaneous
+      </button>
+      <button class="nav-link" data-target="view-hidden-costs" type="button">
+        <span class="nav-ico" aria-hidden="true">⚠</span> Hidden Costs
+      </button>
+      <button class="nav-link" data-target="view-coach" type="button">
+        <span class="nav-ico" aria-hidden="true">🎯</span> Financial Coach
+      </button>
+
+      <span class="nav-section-label">Tools</span>
+      <button class="nav-link" data-target="view-shopping" type="button">
+        <span class="nav-ico" aria-hidden="true">🛒</span> Shopping List
+      </button>
+      <button class="nav-link" data-target="view-savings-goals" type="button">
+        <span class="nav-ico" aria-hidden="true">🎯</span> Savings Goals
+      </button>
+      <button class="nav-link" data-target="view-debt" type="button">
+        <span class="nav-ico" aria-hidden="true">⇌</span> Debt Manager
+      </button>
+      <button class="nav-link" data-target="view-daily-tracker" type="button">
+        <span class="nav-ico" aria-hidden="true">📅</span> Daily Tracker
+      </button>
+
+      <span class="nav-section-label">Help</span>
+      <button class="nav-link" data-target="view-fix-file" type="button">
+        <span class="nav-ico" aria-hidden="true">🛟</span> Fix Your File
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button id="darkModeToggle" class="toggle-btn" type="button" aria-pressed="false">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="toggle-label">Dark mode</span>
+      </button>
+      <button id="clearDataBtn" class="ghost-btn" type="button">Clear stored data</button>
+      <p class="privacy-note">Everything stays on this device. No data ever leaves your browser.</p>
+    </div>
+  </aside>
+
+  <!-- ---------- MAIN ---------- -->
+  <main class="main">
+
+    <!-- Topbar / Import -->
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" type="button" aria-label="Toggle menu">☰</button>
+
+      <div class="topbar-title">
+        <h1 id="pageTitle">Overview</h1>
+        <p id="pageSubtitle" class="muted">Import a statement to see your spending story.</p>
+      </div>
+
+      <div class="import-controls">
+        <label class="file-btn" for="fileInput">
+          <span class="ico" aria-hidden="true">⇪</span> Import statement
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden />
+        </label>
+        <button class="ghost-btn" id="loadSampleBtn" type="button">Load sample data</button>
+      </div>
+    </header>
+
+    <!-- Manual session-restore prompt (data is no longer auto-loaded on page load) -->
+    <div id="restorePrompt" class="restore-prompt" hidden></div>
+
+    <!-- Import status / errors -->
+    <div id="importStatus" class="import-status" hidden></div>
+
+    <!-- Smart header detection debug panel (Upgrade 1) -->
+    <div id="parserDebug" class="parser-debug" hidden></div>
+
+    <!-- ============================================================
+         EMPTY STATE
+         ============================================================ -->
+    <section id="emptyState" class="empty-state">
+      <div class="ledger-tape" id="ledgerTape" aria-hidden="true"></div>
+      <h2>No statement loaded yet</h2>
+      <p class="muted">
+        Import your exported OPay CSV or Excel statement, or load sample data,
+        to generate your spending breakdown, habit insights, financial health score,
+        and next-month predictions — all computed locally on this device.
+      </p>
+      <div class="empty-actions">
+        <label class="file-btn" for="fileInput2">
+          <span class="ico" aria-hidden="true">⇪</span> Import statement
+          <input type="file" id="fileInput2" accept=".csv,.xlsx,.xls" hidden />
+        </label>
+        <button class="ghost-btn" id="loadSampleBtn2" type="button">Load sample data</button>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: DASHBOARD / OVERVIEW
+         ============================================================ -->
+    <section id="view-dashboard" class="view" hidden>
+
+      <div class="card-grid" id="kpiGrid">
+        <!-- KPI cards injected by ui.js -->
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Income vs Expense</h3>
+            <span class="muted small">By month</span>
+          </div>
+          <div class="chart-box chart-box--small">
+            <canvas id="chartIncomeExpenseMini"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Spending by Category</h3>
+            <span class="muted small">All time</span>
+          </div>
+          <div class="chart-box chart-box--small">
+            <canvas id="chartCategoryMini"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Top Insights</h3>
+          <span class="muted small">Auto-generated highlights</span>
+        </div>
+        <ul class="insight-list" id="topInsightsList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: CHARTS
+         ============================================================ -->
+    <section id="view-charts" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Spending by Category</h3>
+          <span class="muted small">Pie — all transactions</span>
+        </div>
+        <div class="chart-box">
+          <canvas id="chartCategoryPie"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Monthly Expense Trend</h3>
+          <span class="muted small">Line — total spend per month</span>
+        </div>
+        <div class="chart-box">
+          <canvas id="chartMonthlyTrend"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Income vs Expense</h3>
+          <span class="muted small">Bar — per month</span>
+        </div>
+        <div class="chart-box">
+          <canvas id="chartIncomeExpenseBar"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Daily Spending Trend</h3>
+          <span class="muted small">Line — every day in range</span>
+        </div>
+        <div class="chart-box">
+          <canvas id="chartDailyTrend"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: INSIGHTS
+         ============================================================ -->
+    <section id="view-insights" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Behavioral Insights</h3>
+          <span class="muted small" id="insightCount">0 observations</span>
+        </div>
+        <ul class="insight-list insight-list--full" id="fullInsightsList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: HEALTH SCORE
+         ============================================================ -->
+    <section id="view-health" class="view" hidden>
+      <div class="panel health-panel">
+        <div class="score-dial-wrap">
+          <svg viewBox="0 0 200 120" class="score-dial" id="scoreDial">
+            <path d="M10,110 A90,90 0 0 1 190,110" class="dial-track"/>
+            <path d="M10,110 A90,90 0 0 1 190,110" class="dial-fill" id="dialFill"/>
+          </svg>
+          <div class="score-readout">
+            <span class="score-number" id="scoreNumber">--</span>
+            <span class="score-rating" id="scoreRating">No data</span>
+          </div>
+        </div>
+
+        <div class="score-breakdown" id="scoreBreakdown">
+          <!-- factor bars injected by ui.js -->
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>What this means</h3>
+        </div>
+        <p id="scoreExplanation" class="explanation-text muted">Import a statement to calculate your score.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: PREDICTIONS
+         ============================================================ -->
+    <section id="view-predictions" class="view" hidden>
+      <div class="card-grid" id="predictionGrid">
+        <!-- prediction cards injected by ui.js -->
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Projected vs Historical Spend</h3>
+          <span class="muted small">Moving average projection</span>
+        </div>
+        <div class="chart-box">
+          <canvas id="chartPrediction"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>How this is calculated</h3>
+        </div>
+        <p class="explanation-text muted">
+          Predictions use a weighted moving average over your recent monthly totals,
+          combined with category trend slopes (linear regression on monthly category spend)
+          and a day-of-month spending distribution. Nothing is sent anywhere — every
+          number below is computed in your browser from your own imported data.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: TRANSACTIONS
+         ============================================================ -->
+    <section id="view-transactions" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>All Transactions</h3>
+          <div class="table-controls">
+            <input type="search" id="txSearch" placeholder="Search description…" class="text-input" />
+            <select id="txCategoryFilter" class="text-input">
+              <option value="">All categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th class="num">Amount</th>
+                <th class="num">Balance</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: RECIPIENT INTELLIGENCE (Upgrade 4)
+         ============================================================ -->
+    <section id="view-recipients" class="view" hidden>
+      <div class="card-grid" id="recipientSummary"></div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Top Recipients by Amount</h3>
+          </div>
+          <div class="chart-box chart-box--small">
+            <canvas id="chartRecipientsByAmount"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Top Recipients by Frequency</h3>
+          </div>
+          <div class="chart-box chart-box--small">
+            <canvas id="chartRecipientsByFrequency"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head"><h3>Ranked by Amount</h3></div>
+          <div class="table-wrap">
+            <table class="tx-table">
+              <thead><tr><th>Recipient</th><th class="num">Count</th><th class="num">Total</th><th class="num">Average</th></tr></thead>
+              <tbody id="recipientByAmountBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Ranked by Frequency</h3></div>
+          <div class="table-wrap">
+            <table class="tx-table">
+              <thead><tr><th>Recipient</th><th class="num">Count</th><th class="num">Total</th><th class="num">Average</th></tr></thead>
+              <tbody id="recipientByFrequencyBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Recipient Insights</h3></div>
+        <ul class="insight-list" id="recipientInsightsList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: SMART MISCELLANEOUS ANALYSIS (Upgrade 3)
+         ============================================================ -->
+    <section id="view-miscellaneous" class="view" hidden>
+      <div class="card-grid" id="miscSummary"></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Likely Sources</h3>
+          <span class="muted small">Pattern-based guesses — transactions are never reclassified</span>
+        </div>
+        <div class="debug-chip-row" id="miscLikelySources"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Miscellaneous Insights</h3></div>
+        <ul class="insight-list" id="miscInsightsList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: HIDDEN COSTS (Upgrade 5)
+         ============================================================ -->
+    <section id="view-hidden-costs" class="view" hidden>
+      <div class="card-grid" id="hiddenCostGrid"></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Transfer Charge &amp; Hidden Cost Insights</h3>
+          <span class="muted small">Statistical estimates — never assumed exact item prices</span>
+        </div>
+        <ul class="insight-list" id="hiddenCostInsightsList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: FINANCIAL COACH (Upgrade 2E)
+         ============================================================ -->
+    <section id="view-coach" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Advice Based on Your Spending</h3>
+          <span class="muted small">Generated from your own imported data — nothing sent anywhere</span>
+        </div>
+        <ul class="insight-list insight-list--full" id="coachAdviceList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: SHOPPING LIST (Upgrade 2A)
+         ============================================================ -->
+    <section id="view-shopping" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Add Item</h3>
+        </div>
+        <form class="tool-form" id="shoppingForm">
+          <input type="text" id="shoppingItemInput" class="text-input" placeholder="Item name" required />
+          <input type="number" id="shoppingPriceInput" class="text-input" placeholder="Estimated price (₦)" min="0" step="0.01" />
+          <input type="text" id="shoppingNotesInput" class="text-input" placeholder="Notes (optional)" />
+          <button type="submit" class="btn-add">Add item</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Your List</h3>
+          <span class="muted small" id="shoppingSummary">0 items</span>
+        </div>
+        <ul class="tool-list" id="shoppingList"></ul>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: SAVINGS GOALS (Upgrade 2B)
+         ============================================================ -->
+    <section id="view-savings-goals" class="view" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Add Goal</h3>
+        </div>
+        <form class="tool-form" id="goalForm">
+          <input type="text" id="goalNameInput" class="text-input" placeholder="Goal name" required />
+          <input type="number" id="goalTargetInput" class="text-input" placeholder="Target amount (₦)" min="0" step="0.01" required />
+          <input type="number" id="goalSavedInput" class="text-input" placeholder="Already saved (₦)" min="0" step="0.01" />
+          <input type="date" id="goalDeadlineInput" class="text-input" />
+          <button type="submit" class="btn-add">Add goal</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Your Goals</h3>
+          <span class="muted small" id="goalsSummary">0 goals</span>
+        </div>
+        <div class="goal-grid" id="goalsList"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: DEBT MANAGER (Upgrade 2C)
+         ============================================================ -->
+    <section id="view-debt" class="view" hidden>
+      <div class="card-grid" id="debtSummary"></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Add Debt Record</h3>
+        </div>
+        <form class="tool-form" id="debtForm">
+          <select id="debtDirectionInput" class="text-input" required>
+            <option value="owe">Money I Owe</option>
+            <option value="owed">Money Owed To Me</option>
+          </select>
+          <input type="text" id="debtPersonInput" class="text-input" placeholder="Person" required />
+          <input type="number" id="debtAmountInput" class="text-input" placeholder="Amount (₦)" min="0" step="0.01" required />
+          <input type="date" id="debtDueDateInput" class="text-input" />
+          <input type="text" id="debtNotesInput" class="text-input" placeholder="Notes (optional)" />
+          <button type="submit" class="btn-add">Add record</button>
+        </form>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head"><h3>Money I Owe</h3></div>
+          <ul class="tool-list" id="debtOweList"></ul>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Money Owed To Me</h3></div>
+          <ul class="tool-list" id="debtOwedList"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: DAILY SPENDING TRACKER (Upgrade 2D)
+         ============================================================ -->
+    <section id="view-daily-tracker" class="view" hidden>
+      <div class="card-grid" id="dailyTrackerSummary"></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Log Spending</h3>
+        </div>
+        <form class="tool-form" id="dailyForm">
+          <input type="date" id="dailyDateInput" class="text-input" required />
+          <input type="text" id="dailyCategoryInput" class="text-input" placeholder="Category" required />
+          <input type="number" id="dailyAmountInput" class="text-input" placeholder="Amount (₦)" min="0" step="0.01" required />
+          <input type="text" id="dailyNotesInput" class="text-input" placeholder="Notes (optional)" />
+          <button type="submit" class="btn-add">Log entry</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Recent Entries</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="tx-table">
+            <thead><tr><th>Date</th><th>Category</th><th class="num">Amount</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="dailyTrackerBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW: FIX YOUR FILE (manual cleanup help)
+         ============================================================ -->
+    <section id="view-fix-file" class="view" hidden>
+
+      <div class="panel fix-intro-panel">
+        <span class="eyebrow-tag">Won't import?</span>
+        <h3>Most import failures come down to one thing</h3>
+        <p class="muted">
+          Bank and wallet apps usually add a few summary rows — account name,
+          account number, total credits — above the real transaction table.
+          Most of the time the app detects and skips these automatically.
+          If it can't (or the file itself is damaged), you can fix it
+          yourself in under a minute by editing the spreadsheet directly.
+        </p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Before and after</h3>
+          <span class="muted small">What to remove, and what should be left</span>
+        </div>
+
+        <div class="before-after-grid">
+
+          <!-- BEFORE -->
+          <div class="mock-sheet-col">
+            <div class="mock-sheet-label mock-sheet-label--bad">
+              <span class="mock-dot mock-dot--bad"></span> Before — won't import
+            </div>
+            <div class="mock-sheet">
+              <div class="mock-row mock-row--strike"><span class="mock-cell mock-cell--wide">Statement of Account</span></div>
+              <div class="mock-row mock-row--strike"><span class="mock-cell">Account Name</span><span class="mock-cell">Victor Omiyale</span></div>
+              <div class="mock-row mock-row--strike"><span class="mock-cell">Account Number</span><span class="mock-cell">9072558414</span></div>
+              <div class="mock-row mock-row--strike"><span class="mock-cell">Total Credits</span><span class="mock-cell">₦2,501,385.15</span></div>
+              <div class="mock-row mock-row--strike"><span class="mock-cell">Total Debits</span><span class="mock-cell">₦2,501,385.15</span></div>
+              <div class="mock-row mock-row--header">
+                <span class="mock-cell">Trans. Date</span><span class="mock-cell">Description</span><span class="mock-cell">Debit</span><span class="mock-cell">Credit</span>
+              </div>
+              <div class="mock-row">
+                <span class="mock-cell">01 Jan 2026</span><span class="mock-cell">SALARY PAYMENT</span><span class="mock-cell">—</span><span class="mock-cell">255,000.00</span>
+              </div>
+              <div class="mock-row">
+                <span class="mock-cell">02 Jan 2026</span><span class="mock-cell">UBER TRIP</span><span class="mock-cell">1,800.00</span><span class="mock-cell">—</span>
+              </div>
+            </div>
+            <p class="mock-sheet-caption">Rows 1–5 are account info, not transactions — this is what trips up an import.</p>
+          </div>
+
+          <!-- AFTER -->
+          <div class="mock-sheet-col">
+            <div class="mock-sheet-label mock-sheet-label--good">
+              <span class="mock-dot mock-dot--good"></span> After — imports cleanly
+            </div>
+            <div class="mock-sheet">
+              <div class="mock-row mock-row--header mock-row--top">
+                <span class="mock-cell">Trans. Date</span><span class="mock-cell">Description</span><span class="mock-cell">Debit</span><span class="mock-cell">Credit</span>
+              </div>
+              <div class="mock-row">
+                <span class="mock-cell">01 Jan 2026</span><span class="mock-cell">SALARY PAYMENT</span><span class="mock-cell">—</span><span class="mock-cell">255,000.00</span>
+              </div>
+              <div class="mock-row">
+                <span class="mock-cell">02 Jan 2026</span><span class="mock-cell">UBER TRIP</span><span class="mock-cell">1,800.00</span><span class="mock-cell">—</span>
+              </div>
+              <div class="mock-row mock-row--ghost"><span class="mock-cell mock-cell--wide">…rest of your transactions…</span></div>
+            </div>
+            <p class="mock-sheet-caption">The header row (Date, Description, Debit, Credit…) is now row 1. Nothing above it.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>How to edit it</h3>
+          <span class="muted small">Works in Excel, Google Sheets, or the Sheets/Excel app on your phone</span>
+        </div>
+        <div class="timeline">
+          <div class="timeline-step">
+            <div class="step-marker">1</div>
+            <div class="step-body">
+              <h3>Open the file</h3>
+              <p>Open the downloaded statement in Excel, Google Sheets, or a spreadsheet app on your phone.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-marker">2</div>
+            <div class="step-body">
+              <h3>Find the real header row</h3>
+              <p>Scroll down until you see the row with column titles like <strong>Date</strong>, <strong>Description</strong>, <strong>Debit</strong>, <strong>Credit</strong>, or <strong>Balance</strong>. That's your header row.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-marker">3</div>
+            <div class="step-body">
+              <h3>Select and delete everything above it</h3>
+              <p>Select every row above the header row — account name, account number, opening balance, totals, anything else — and delete those rows entirely (not just the text). On mobile: tap the first row number, drag to the last row above the header, then delete rows.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-marker">4</div>
+            <div class="step-body">
+              <h3>Confirm the header is now row 1</h3>
+              <p>The column titles row should now be at the very top of the sheet, with no blank or text rows above it.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="step-marker">5</div>
+            <div class="step-body">
+              <h3>Save and re-upload</h3>
+              <p>Save the file (keep it as .xlsx or .csv), then import it again here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-callout">
+        <span class="info-callout-icon">💡</span>
+        <p>If the file still won't import after this, it may be genuinely damaged rather than just having extra rows — try re-downloading or re-exporting the statement from your bank or wallet app for a fresh copy.</p>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ============================================================
+     VENDOR LIBRARIES (load locally for true offline use)
+     ============================================================ -->
+<script src="vendor/papaparse.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+
+<!-- ============================================================
+     APP MODULES (order matters: each attaches to window.FHA)
+     ============================================================ -->
+<script src="modules/sampleData.js"></script>
+<script src="modules/parser.js"></script>
+<script src="modules/categorizer.js"></script>
+<script src="modules/analytics.js"></script>
+<script src="modules/predictionEngine.js"></script>
+<script src="modules/charts.js"></script>
+<script src="modules/standaloneTools.js"></script>
+<script src="modules/ui.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
